@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tns="http://pt.advancecare.awsp.eligibilityAO">
+	<soap:Header>
+		<wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+			<wsu:Timestamp wsu:Id="Timestamp-{{ timestamp_id }}">
+				<wsu:Created>{{ created }}</wsu:Created>
+				<wsu:Expires>{{ expires }}</wsu:Expires>
+			</wsu:Timestamp>
+			<wsse:UsernameToken xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" wsu:Id="SecurityToken-{{ timestamp_id }}">
+				<wsse:Username>{{ username }}</wsse:Username>
+				<wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">{{ password }}</wsse:Password>
+				<wsu:Created>{{ created }}</wsu:Created>
+			</wsse:UsernameToken>
+		</wsse:Security>
+	</soap:Header>
+  <soap:Body>
+    <tns:performSingleActRequest xmlns:tns="http://pt.advancecare.awsp.eligibilityAO">
+      <SingleActParametersTO_1>
+        <dos>{{ data.dos }}</dos>
+        <memID>{{ data.memID }}</memID>
+        <buID>{{ data.buID }}</buID>
+        <currencyCode>{{ data.currencyCode }}</currencyCode>
+        <practiceSeq>{{ data.practiceSeq }}</practiceSeq>
+        <providerID>{{ data.providerID }}</providerID>
+        <specialtyNbr>{{ data.specialtyNbr }}</specialtyNbr>
+{% if data.get('icd9Codes') %}
+{% for icd9 in data.icd9Codes %}
+        <icd9Codes>
+          <diagCode>{{ icd9.diagCode }}</diagCode>
+        </icd9Codes>
+{% endfor %}
+{% endif %}
+{% if data.get('eligibilityServiceValues') %}
+{% for service in data.eligibilityServiceValues %}
+        <eligibilityServiceValues>
+          <amtClaimed>{{ service.amtClaimed }}</amtClaimed>
+          <procCode>{{ service.procCode }}</procCode>
+          <serviceCode>{{ service.serviceCode }}</serviceCode>
+          <unit>{{ service.unit }}</unit>
+        </eligibilityServiceValues>
+{% endfor %}
+{% endif %}
+      </SingleActParametersTO_1>
+    </tns:performSingleActRequest>
+  </soap:Body>
+</soap:Envelope>

@@ -1,0 +1,18 @@
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Header>
+    <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+      <wsse:UsernameToken>
+        <wsse:Username>{{ username }}</wsse:Username>
+        <wsse:Password>{{ password }}</wsse:Password>
+        <wsse:Created>{{ created }}</wsse:Created>
+      </wsse:UsernameToken>
+    </wsse:Security>
+  </soap:Header>
+  <soap:Body>
+    <ns2:nullifyEligibilityOrSingleActRequest xmlns:ns2="http://pt.advancecare.awsp.eligibilityAO">
+      <NullifyEligibilityParametersTO_1>
+        <elegibilityNbr>{{ data.elegibilityNbr }}</elegibilityNbr>
+      </NullifyEligibilityParametersTO_1>
+    </ns2:nullifyEligibilityOrSingleActRequest>
+  </soap:Body>
+</soap:Envelope>

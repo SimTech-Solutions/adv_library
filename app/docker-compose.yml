@@ -1,0 +1,27 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adv-library-php
+    working_dir: /app
+    command: vendor/bin/phpunit
+    volumes:
+      - .:/app
+    environment:
+      - ADVANCECARE_ENV=QUAL
+      - HTTP_MAX_RETRIES=3
+      - HTTP_BACKOFF_FACTOR=2.0
+      - HTTP_REQUEST_TIMEOUT_SEC=30
+      - TOKEN_CACHE_TTL_SEC=3600
+      - LOG_LEVEL=INFO
+    ports:
+      - "9000:9000"
+    stdin_open: true
+    tty: true
+    networks:
+      - insurance-api-network
+
+networks:
+  insurance-api-network:
+    driver: bridge
