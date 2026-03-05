@@ -11,5 +11,5 @@ COPY . .
 
 RUN composer install --no-interaction --prefer-dist --ignore-platform-req=php
 
-CMD ["vendor/bin/phpunit"]
+CMD ["./vendor/bin/phpunit"]
 

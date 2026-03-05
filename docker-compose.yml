@@ -2,10 +2,12 @@ services:
 
   php:
    
-    image: adv-library-php
+    build: 
+      context: .
+      dockerfile: Dockerfile
     container_name: adv-library-php
     working_dir: /app
-    command: vendor/bin/phpunit
+    command: ./vendor/bin/phpunit
     volumes:
       - .:/app
  
