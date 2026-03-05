@@ -1,0 +1,9 @@
+/.github
+/.gitignore
+/Dockerfile
+/docker-compose.yml
+/phpunit.xml
+/tests
+/vendor
+.DS_Store
+*.log
