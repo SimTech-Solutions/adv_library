@@ -9,8 +9,8 @@ use AdvClientAPI\Contracts\LoggerInterface;
 use AdvClientAPI\Contracts\InsuranceServiceInterface;
 use AdvClientAPI\Utilities\RetryPolicy;
 use AdvClientAPI\Exceptions\InsuranceApiException;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 
 /**
  * Abstract base service with common functionality
@@ -20,13 +20,18 @@ abstract class BaseService implements InsuranceServiceInterface
     protected Config $config;
     protected LoggerInterface $logger;
     protected RetryPolicy $retryPolicy;
+    protected Client $httpClient;
 
     public function __construct(Config $config)
     {
         $this->config = $config;
         $this->logger = $config->getLogger();
         
-        // print($this->logger);
+        // Initialize Guzzle HTTP client
+        $this->httpClient = new Client([
+            'verify' => false,
+            'timeout' => 60,
+        ]);
 
         $this->retryPolicy = new RetryPolicy(
             $config->getMaxRetries(),
@@ -73,22 +78,38 @@ protected function makeRequest(
         ?string $body = null
     ): array {
         try {
-            $response = Http::withHeaders($headers)
-            ->withOptions([
+            $options = [
+                'headers' => $headers,
                 'allow_redirects' => false, // IMPORTANTE: Nós vamos controlar o redirect
-                'verify' => false,
-            ])
-            ->timeout(60)
-            ->send($method, $url, ['body' => $body]);
+            ];
 
-        return [
-            'status_code' => $response->status(),
-            'body'        => $response->body(),
-            'headers'     => $response->headers(),
-        ];
+            if ($body !== null && $method !== 'GET') {
+                $options['body'] = $body;
+            }
 
+            $response = $this->httpClient->request($method, $url, $options);
+
+            return [
+                'status_code' => $response->getStatusCode(),
+                'body'        => $response->getBody()->getContents(),
+                'headers'     => $response->getHeaders(),
+            ];
+
+        } catch (GuzzleException $e) {
+            $this->logger->error("Erro na requisição HTTP no executeRequest: " . $e->getMessage(), [
+                'method' => $method,
+                'url' => $url,
+                'headers' => $headers,
+                'body' => $body,
+            ]);
+            throw new InsuranceApiException("Erro interno ao processar pedido à seguradora.");
         } catch (\Exception $e) {
-            Log::error("Erro inesperado no executeRequest: " . $e->getMessage());
+            $this->logger->error("Erro inesperado no executeRequest: " . $e->getMessage(), [
+                'method' => $method,
+                'url' => $url,
+                'headers' => $headers,
+                'body' => $body,
+            ]);
             throw new InsuranceApiException("Erro interno ao processar pedido à seguradora.");
         }
     }

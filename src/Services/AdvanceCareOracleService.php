@@ -144,15 +144,15 @@ class AdvanceCareOracleService extends BaseService
          
           if ($response['status_code'] === 302 || $response['status_code'] === 303) {
                 $responseHeaders = $response['headers'];
-                $redirectUrl =null;
-                // Check for Location header
-                foreach ($responseHeaders as $value){
-                    if (stripos($value, 'location:') ===0) {
-                        $redirectUrl = trim(substr($value, 9));
-                        break;
-                    }
-
+                $redirectUrl = null;
+                
+                // Check for Location header (Guzzle returns headers as associative array)
+                if (isset($responseHeaders['Location']) && is_array($responseHeaders['Location'])) {
+                    $redirectUrl = $responseHeaders['Location'][0];
+                } elseif (isset($responseHeaders['location']) && is_array($responseHeaders['location'])) {
+                    $redirectUrl = $responseHeaders['location'][0];
                 }
+                
                 // checking for redirect Url
                 if ($redirectUrl === null || empty($redirectUrl)) {
                     throw new OracleException(
