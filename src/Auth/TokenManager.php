@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AdvClientAPI\Auth;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 use AdvClientAPI\Contracts\LoggerInterface;
 use AdvClientAPI\Contracts\TokenCacheInterface;
 use AdvClientAPI\Exceptions\AuthException;
@@ -47,10 +49,7 @@ class TokenManager
 
         string $scope
     ): string {
-        // print($tokenUrl);
-        // print($clientId);
-        // print($clientSecret);
-        // print($scope);
+   
         // Generate cache key
         $cacheKey = $this->generateCacheKey($clientId, $scope);
 
@@ -65,10 +64,10 @@ class TokenManager
             return $cached['accessToken'];
         }
 
-        // $this->logger->info('Fetching new token', [
-        //     'clientId' => $clientId,
-        //     'tokenUrl' => $tokenUrl,
-        // ]);
+        $this->logger->info('Fetching new token', [
+            'clientId' => $clientId,
+            'tokenUrl' => $tokenUrl,
+        ]);
 
         // Fetch new token
         $token = $this->fetchNewToken($tokenUrl, $clientId, $clientSecret, $scope);
@@ -106,100 +105,66 @@ class TokenManager
      * @return array{accessToken: string, expiresAt: int}
      * @throws AuthException
      */
-    private function fetchNewToken(
-        string $tokenUrl,
-        string $clientId,
-        string $clientSecret,
-        string $scope
-    ): array {
-        $data = [
-            'scope'=>$scope,
-            'grant_type'=>'client_credentials'
-        ];
-        $ch = curl_init();
 
-        // print("Token Url: $tokenUrl   ");
-        // print("Client Id: $clientId   ");
-        // print("Client Secret: $clientSecret   ");
-        // print("Scope: $scope   ");
-        // curl_setopt($ch, CURLOPT_URL, $tokenUrl);
-        // curl_setopt($ch, CURLOPT_POST, true);
-        // curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+private function fetchNewToken(
+    string $tokenUrl,
+    string $clientId,
+    string $clientSecret,
+    string $scope
+): array {
+    $client = new Client([
+        'timeout' => 60,
+    ]);
 
-
-        curl_setopt_array($ch, [
-
-            CURLOPT_URL => $tokenUrl,
-            CURLOPT_POST => true,
-      
-            CURLOPT_POSTFIELDS => http_build_query(
-                $data
-            // [
-            //     'grant_type' => 'client_credentials',
-            //     'client_id' => $clientId,
-            //     'client_secret' => $clientSecret,
-            //     'scope' => $scope,
-            // ]
-            ),
-            CURLOPT_HTTPHEADER => [
-                'authorization: Basic '.base64_encode($clientId . ':' . $clientSecret),
-                'Content-type: application/x-www-form-urlencoded'
-
+    try {
+        $response = $client->post($tokenUrl, [
+            'headers' => [
+                'Authorization' => 'Basic ' . base64_encode($clientId . ':' . $clientSecret),
+                'Content-Type'  => 'application/x-www-form-urlencoded',
             ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 60,
-            // CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
-            // CURLOPT_USERPWD => "{$clientId}:{$clientSecret}",
-            // CURLOPT_HEADER => true,
+            'form_params' => [
+                'scope'       => $scope,
+                'grant_type'  => 'client_credentials',
+            ],
         ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-
-        if ($response === false) {
-            throw new AuthException(
-                "CURL error: {$curlError}",
-                $tokenUrl,
-                $clientId
-            );
-        }
-
-        if ($httpCode !== 200) {
-            throw new AuthException(
-                "Token endpoint returned HTTP {$httpCode}: {$response}",
-                $tokenUrl,
-                $clientId
-            );
-        }
-        $parts = explode("\r\n\r\n", $response, 2); 
-        $body = $parts[1] ?? $response;
-      
-      
-        // Parse response
-
-
-        $data = json_decode($body, true);
-      
-    //    var_dump($data);
-
-        if (!is_array($data) || !isset($data['access_token'])) {
-            throw new AuthException(
-                "Invalid token response: missing access_token",
-                $tokenUrl,
-                $clientId
-            );
-        }
-
-        // Parse expiration time
-        $expiresIn = isset($data['expires_in']) ? (int)$data['expires_in'] : 3600;
-        $expiresAt = time() + $expiresIn;
-
-        return [
-            'accessToken' => $data['access_token'],
-            'expiresAt' => $expiresAt,
-        ];
+    } catch (RequestException $e) {
+        throw new AuthException(
+            "HTTP request error: {$e->getMessage()}",
+            $tokenUrl,
+            $clientId
+        );
     }
+
+    $httpCode = $response->getStatusCode();
+    $body     = (string) $response->getBody();
+
+    if ($httpCode !== 200) {
+        throw new AuthException(
+            "Token endpoint returned HTTP {$httpCode}: {$body}",
+            $tokenUrl,
+            $clientId
+        );
+    }
+
+    $data = json_decode($body, true);
+
+    if (!is_array($data) || !isset($data['access_token'])) {
+        throw new AuthException(
+            "Invalid token response: missing access_token",
+            $tokenUrl,
+            $clientId
+        );
+    }
+
+    $expiresIn = isset($data['expires_in']) ? (int)$data['expires_in'] : 3600;
+    $expiresAt = time() + $expiresIn;
+
+    return [
+        'accessToken' => $data['access_token'],
+        'expiresAt'   => $expiresAt,
+    ];
+}
+
 
     /**
      * Generate cache key from clientId and scope
