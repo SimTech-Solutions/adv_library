@@ -125,7 +125,7 @@ class AdvanceCareOracleService extends BaseService
        
         // Prepare request - add Bearer prefix 
         $headers = [
-            'Authorization' => 'Bearer ' . $token,  // Add "Bearer " prefix
+            'Authorization' => "Bearer $token",  // Add "Bearer " prefix
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
             'Provider' => $providerId,
@@ -181,7 +181,7 @@ class AdvanceCareOracleService extends BaseService
                     $responseBody
                 );
                 $parsedData = $mapper->map();
-            //    var_dump($parsedData);
+          
                 return $parsedData;
             }
 

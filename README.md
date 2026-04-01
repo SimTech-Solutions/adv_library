@@ -213,7 +213,7 @@ use AdvClientAPI\Core\AdvClient;
 
             ];
             $result = $client->oracleCancelEligibility($payload);
-            var_dump($result);
+            // var_dump($result);
             
         } catch (Exception $e) {
             print($e->getMessage());

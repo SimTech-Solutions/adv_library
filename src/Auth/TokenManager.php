@@ -64,10 +64,10 @@ class TokenManager
             return $cached['accessToken'];
         }
 
-        $this->logger->info('Fetching new token', [
-            'clientId' => $clientId,
-            'tokenUrl' => $tokenUrl,
-        ]);
+        // $this->logger->info('Fetching new token', [
+        //     'clientId' => $clientId,
+        //     'tokenUrl' => $tokenUrl,
+        // ]);
 
         // Fetch new token
         $token = $this->fetchNewToken($tokenUrl, $clientId, $clientSecret, $scope);
